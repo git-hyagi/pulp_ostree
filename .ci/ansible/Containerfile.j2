@@ -35,6 +35,11 @@ ENV {{ key | upper }}={{ value }}
 {% endfor %}
 {% endif %}
 
+# Install rpm-ostree tests dependencies
+COPY pulp_ostree/.ci/scripts/rpm_ostree_dependencies.sh /tmp
+RUN /tmp/rpm_ostree_dependencies.sh
+
+
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
        /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link

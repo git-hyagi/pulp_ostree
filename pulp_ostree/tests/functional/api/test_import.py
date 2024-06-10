@@ -276,3 +276,108 @@ def test_version_removal(
         )
         response.raise_for_status()
     assert exc.value.response.status_code == 404, repo_version2_href
+
+
+def test_import_commits_with_rpm_ostree(
+    artifacts_api_client,
+    gen_object_with_cleanup,
+    monitor_task,
+    ostree_content_commits_api_client,
+    ostree_repository_factory,
+    ostree_repositories_api_client,
+    ostree_repositories_versions_api_client,
+    tmp_path,
+):
+    """Import a repository with import-all, then import single commits with import-commits."""
+    os.chdir(tmp_path)
+    cache_dir = tmp_path / "cache"
+    # ostree repo
+    repo_name = "repo"
+    # ostree ref
+    branch_name = "fedora/stable/x86_64/iot"
+    # directory to keep the repository
+    git_dir = "fedora-iot-spec"
+    # rpm-ostree compose treefile
+    tree_file = "fedora-iot-spec/fedora-iot.yaml"
+    # repository with the compose configs
+    source_repo = "https://pagure.io/fedora-iot/ostree.git"
+    # commit for the first test with import-all
+    commit_import_all = "c1eb922887dcb3301b73a8d5f058340eaef5c6b1"
+    # commit for the test with adding/modifying files and import-commit
+    commit_single_import = "f40"
+
+    cache_dir.mkdir()
+    subprocess.run(["ostree", f"--repo={repo_name}", "init", "--mode=archive"])
+    subprocess.run(["git", "clone", f"{source_repo}", "-n", f"{git_dir}/"])
+    subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_import_all}"])
+    subprocess.run(
+        [
+            "sudo",
+            "rpm-ostree",
+            "compose",
+            "tree",
+            "--unified-core",
+            f"--cachedir={cache_dir}",
+            f"--repo={repo_name}",
+            f"{tree_file}",
+        ],
+    )
+
+    subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
+    subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
+
+    artifact = gen_object_with_cleanup(artifacts_api_client, f"{repo_name}.tar")
+    repo = ostree_repository_factory()
+    commit_data = OstreeImportAll(artifact.pulp_href, repo_name)
+    response = ostree_repositories_api_client.import_all(repo.pulp_href, commit_data)
+    repo_version = monitor_task(response.task).created_resources[0]
+
+    repository_version = ostree_repositories_versions_api_client.read(repo_version)
+    added_content = repository_version.content_summary.added
+    assert added_content["ostree.config"]["count"] == 1
+    assert added_content["ostree.summary"]["count"] == 1
+
+    first_commit = ostree_content_commits_api_client.list(
+        repository_version=repository_version.pulp_href
+    ).results[0]
+
+    subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_single_import}"])
+    result = subprocess.run(
+        ["sudo", "ostree", f"--repo={repo_name}", "rev-parse", f"{branch_name}"],
+        capture_output=True,
+        text=True,
+    )
+    parent_commit = result.stdout
+    subprocess.run(
+        [
+            "sudo",
+            "rpm-ostree",
+            "compose",
+            "tree",
+            "--unified-core",
+            f"--cachedir={cache_dir}",
+            f"--repo={repo_name}",
+            f"--parent={parent_commit}",
+            f"--previous-commit={parent_commit}",
+            f"{tree_file}",
+        ],
+    )
+    subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
+    subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
+
+    artifact = gen_object_with_cleanup(artifacts_api_client, f"{repo_name}.tar")
+
+    add_data = OstreeImportCommitsToRef(artifact.pulp_href, repo_name, branch_name)
+    response = ostree_repositories_api_client.import_commits(repo.pulp_href, add_data)
+    repo_version = monitor_task(response.task).created_resources[0]
+
+    repository_version = ostree_repositories_versions_api_client.read(repo_version)
+    added_content = repository_version.content_summary.added
+    assert added_content["ostree.refs"]["count"] == 1
+    assert added_content["ostree.commit"]["count"] == 1
+
+    commit_list = ostree_content_commits_api_client.list(
+        repository_version=repository_version.pulp_href
+    ).results[0]
+    # verify if parent_commit references pulp_href's first commit
+    assert first_commit.pulp_href == commit_list.parent_commit
