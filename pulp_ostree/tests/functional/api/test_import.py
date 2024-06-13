@@ -3,6 +3,7 @@ import requests
 import os
 import shutil
 import subprocess
+import sys
 import uuid
 
 from requests.exceptions import HTTPError
@@ -327,7 +328,7 @@ def test_import_commits_with_rpm_ostree(
     #subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
 
 
-    artifact = gen_object_with_cleanup(artifacts_api_client, "/pulp_ostree/repo_v1.tar")
+    artifact = gen_object_with_cleanup(artifacts_api_client, "/tmp/repo_v1.tar")
     repo = ostree_repository_factory()
     commit_data = OstreeImportAll(artifact.pulp_href, repo_name)
     response = ostree_repositories_api_client.import_all(repo.pulp_href, commit_data)
@@ -367,7 +368,7 @@ def test_import_commits_with_rpm_ostree(
     #subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
     #subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
 
-    artifact = gen_object_with_cleanup(artifacts_api_client, "/pulp_ostree/repo_v2.tar")
+    artifact = gen_object_with_cleanup(artifacts_api_client, "/tmp/repo_v2.tar")
 
     add_data = OstreeImportCommitsToRef(artifact.pulp_href, repo_name, branch_name)
     response = ostree_repositories_api_client.import_commits(repo.pulp_href, add_data)

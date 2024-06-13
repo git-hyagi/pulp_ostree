@@ -52,6 +52,7 @@ jobs:
         uses: "actions/download-artifact@v4"
         with:
           pattern: "repo_v*.tar"
+          path: "/tmp/"
 
       - name: "Install python dependencies"
         run: |
