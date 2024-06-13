@@ -307,6 +307,9 @@ def test_import_commits_with_rpm_ostree(
     # commit for the test with adding/modifying files and import-commit
     commit_single_import = "f40"
 
+    # to build the tar files
+    # sudo docker run --rm -it -w /pulp_ostree --privileged --user root -v ./pulp_ostree:/pulp_ostree quay.io/fedora/fedora:40 /pulp_ostree/.github/workflows/scripts/build_rpm_ostree_artifacts.sh
+
     #cache_dir.mkdir()
     #subprocess.run(["ostree", f"--repo={repo_name}", "init", "--mode=archive"])
     #subprocess.run(["git", "clone", f"{source_repo}", "-n", f"{git_dir}/"])
@@ -340,8 +343,7 @@ def test_import_commits_with_rpm_ostree(
     assert added_content["ostree.summary"]["count"] == 1
 
     first_commit = ostree_content_commits_api_client.list(
-        #repository_version=repository_version.pulp_href
-        repository_version_added=repository_version.pulp_href
+        repository_version=repository_version.pulp_href
     ).results[0]
 
     #subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_single_import}"])
@@ -380,8 +382,7 @@ def test_import_commits_with_rpm_ostree(
     assert added_content["ostree.commit"]["count"] == 1
 
     commit_list = ostree_content_commits_api_client.list(
-        #repository_version=repository_version.pulp_href
-        repository_version_added=repository_version.pulp_href
+        repository_version=repository_version.pulp_href
     ).results[0]
     # verify if parent_commit references pulp_href's first commit
     assert first_commit.pulp_href == commit_list.parent_commit

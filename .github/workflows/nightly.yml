@@ -26,6 +26,31 @@ jobs:
   build:
     uses: "./.github/workflows/build.yml"
 
+  # Need to find a way to run this in parallel with the other steps because this job takes around
+  # 8 minutes to run.
+  # If we set this as a dependency for the tests, for situations like we want to check if a specific
+  # test is running fine would take at least 8 minutes to build the artifacts (that would not be needed)
+  # plus the time to run the specific test.
+  build-ostree-artifacts:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 1
+          path: "pulp_ostree"
+
+      - name: "Build rpm_ostree artifacts"
+        run: |
+          sudo docker run -w /pulp_ostree --privileged --user root -v .:/pulp_ostree quay.io/fedora/fedora:40 /pulp_ostree/.github/workflows/scripts/build_rpm_ostree_artifacts.sh
+        shell: bash
+      - name: "Upload Artifacts"
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "rpm_ostree_artifacts"
+          path: "pulp_ostree/rpm_ostree_artifacts/*.tar"
+          if-no-files-found: "error"
+          retention-days: 1
+          overwrite: true
   test:
     needs: "build"
     uses: "./.github/workflows/test.yml"
