@@ -338,7 +338,8 @@ def test_import_commits_with_rpm_ostree(
     assert added_content["ostree.summary"]["count"] == 1
 
     first_commit = ostree_content_commits_api_client.list(
-        repository_version=repository_version.pulp_href
+        #repository_version=repository_version.pulp_href
+        repository_version_added=repository_version.pulp_href
     ).results[0]
 
     subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_single_import}"])
@@ -377,7 +378,8 @@ def test_import_commits_with_rpm_ostree(
     assert added_content["ostree.commit"]["count"] == 1
 
     commit_list = ostree_content_commits_api_client.list(
-        repository_version=repository_version.pulp_href
+        #repository_version=repository_version.pulp_href
+        repository_version_added=repository_version.pulp_href
     ).results[0]
     # verify if parent_commit references pulp_href's first commit
     assert first_commit.pulp_href == commit_list.parent_commit
