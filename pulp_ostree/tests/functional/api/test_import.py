@@ -306,27 +306,28 @@ def test_import_commits_with_rpm_ostree(
     # commit for the test with adding/modifying files and import-commit
     commit_single_import = "f40"
 
-    cache_dir.mkdir()
-    subprocess.run(["ostree", f"--repo={repo_name}", "init", "--mode=archive"])
-    subprocess.run(["git", "clone", f"{source_repo}", "-n", f"{git_dir}/"])
-    subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_import_all}"])
-    subprocess.run(
-        [
-            "sudo",
-            "rpm-ostree",
-            "compose",
-            "tree",
-            "--unified-core",
-            f"--cachedir={cache_dir}",
-            f"--repo={repo_name}",
-            f"{tree_file}",
-        ],
-    )
+    #cache_dir.mkdir()
+    #subprocess.run(["ostree", f"--repo={repo_name}", "init", "--mode=archive"])
+    #subprocess.run(["git", "clone", f"{source_repo}", "-n", f"{git_dir}/"])
+    #subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_import_all}"])
+    #subprocess.run(
+    #    [
+    #        "sudo",
+    #        "rpm-ostree",
+    #        "compose",
+    #        "tree",
+    #        "--unified-core",
+    #        f"--cachedir={cache_dir}",
+    #        f"--repo={repo_name}",
+    #        f"{tree_file}",
+    #    ],
+    #)
 
-    subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
-    subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
+    #subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
+    #subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
 
-    artifact = gen_object_with_cleanup(artifacts_api_client, f"{repo_name}.tar")
+
+    artifact = gen_object_with_cleanup(artifacts_api_client, "/pulp_ostree/repo_v1.tar")
     repo = ostree_repository_factory()
     commit_data = OstreeImportAll(artifact.pulp_href, repo_name)
     response = ostree_repositories_api_client.import_all(repo.pulp_href, commit_data)
@@ -342,31 +343,31 @@ def test_import_commits_with_rpm_ostree(
         repository_version_added=repository_version.pulp_href
     ).results[0]
 
-    subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_single_import}"])
-    result = subprocess.run(
-        ["sudo", "ostree", f"--repo={repo_name}", "rev-parse", f"{branch_name}"],
-        capture_output=True,
-        text=True,
-    )
-    parent_commit = result.stdout
-    subprocess.run(
-        [
-            "sudo",
-            "rpm-ostree",
-            "compose",
-            "tree",
-            "--unified-core",
-            f"--cachedir={cache_dir}",
-            f"--repo={repo_name}",
-            f"--parent={parent_commit}",
-            f"--previous-commit={parent_commit}",
-            f"{tree_file}",
-        ],
-    )
-    subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
-    subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
+    #subprocess.run(["git", "-C", f"{git_dir}", "checkout", f"{commit_single_import}"])
+    #result = subprocess.run(
+    #    ["sudo", "ostree", f"--repo={repo_name}", "rev-parse", f"{branch_name}"],
+    #    capture_output=True,
+    #    text=True,
+    #)
+    #parent_commit = result.stdout
+    #subprocess.run(
+    #    [
+    #        "sudo",
+    #        "rpm-ostree",
+    #        "compose",
+    #        "tree",
+    #        "--unified-core",
+    #        f"--cachedir={cache_dir}",
+    #        f"--repo={repo_name}",
+    #        f"--parent={parent_commit}",
+    #        f"--previous-commit={parent_commit}",
+    #        f"{tree_file}",
+    #    ],
+    #)
+    #subprocess.run(["sudo", "ostree", "summary", f"--repo={repo_name}", "--update"])
+    #subprocess.run(["sudo", "tar", "cf", f"{repo_name}.tar", f"{repo_name}"])
 
-    artifact = gen_object_with_cleanup(artifacts_api_client, f"{repo_name}.tar")
+    artifact = gen_object_with_cleanup(artifacts_api_client, "/pulp_ostree/repo_v2.tar")
 
     add_data = OstreeImportCommitsToRef(artifact.pulp_href, repo_name, branch_name)
     response = ostree_repositories_api_client.import_commits(repo.pulp_href, add_data)

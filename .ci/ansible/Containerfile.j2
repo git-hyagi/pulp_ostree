@@ -35,9 +35,9 @@ ENV {{ key | upper }}={{ value }}
 {% endfor %}
 {% endif %}
 
-# Install rpm-ostree tests dependencies
-COPY pulp_ostree/.ci/scripts/rpm_ostree_dependencies.sh /tmp
-RUN /tmp/rpm_ostree_dependencies.sh
+## Install rpm-ostree tests dependencies
+#COPY pulp_ostree/.ci/scripts/rpm_ostree_dependencies.sh /tmp
+#RUN /tmp/rpm_ostree_dependencies.sh
 
 
 USER pulp:pulp
