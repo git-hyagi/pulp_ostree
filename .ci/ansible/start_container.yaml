@@ -13,17 +13,11 @@
       loop:
         - settings
         - ssh
-        - ~/.config/pulp_smash
 
     - name: "Generate Pulp Settings"
       template:
         src: settings.py.j2
         dest: settings/settings.py
-
-    - name: "Configure pulp-smash"
-      copy:
-        src: smash-config.json
-        dest: ~/.config/pulp_smash/settings.json
 
     - name: "Setup docker networking"
       docker_network:

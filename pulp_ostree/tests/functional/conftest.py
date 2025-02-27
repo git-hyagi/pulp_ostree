@@ -1,7 +1,8 @@
 import pytest
 import uuid
 
-from pulp_ostree.tests.functional.constants import OSTREE_FIXTURE_URL
+from urllib.parse import urljoin
+
 from pulpcore.client.pulp_ostree import (
     ApiClient,
     ContentCommitsApi,
@@ -100,10 +101,10 @@ def ostree_repository_factory(ostree_repositories_api_client, gen_object_with_cl
 
 
 @pytest.fixture(scope="class")
-def ostree_remote_factory(ostree_remotes_api_client, gen_object_with_cleanup):
+def ostree_remote_factory(ostree_fixture_url, ostree_remotes_api_client, gen_object_with_cleanup):
     """A factory to generate an ostree Remote with auto-deletion after the test run."""
 
-    def _ostree_remote_factory(*, url=OSTREE_FIXTURE_URL, policy="immediate", **kwargs):
+    def _ostree_remote_factory(*, url=ostree_fixture_url, policy="immediate", **kwargs):
         extra_args = {}
         if pulp_domain := kwargs.pop("pulp_domain", None):
             extra_args["pulp_domain"] = pulp_domain
@@ -134,6 +135,7 @@ def ostree_distribution_factory(ostree_distributions_api_client, gen_object_with
 
 @pytest.fixture(scope="class")
 def sync_repo_version(
+    ostree_fixture_url,
     ostree_repositories_api_client,
     ostree_repositories_versions_api_client,
     ostree_repository_factory,
@@ -150,7 +152,7 @@ def sync_repo_version(
         if repo is None:
             repo = ostree_repository_factory()
         if remote is None:
-            remote = ostree_remote_factory(url=OSTREE_FIXTURE_URL, policy=policy, depth=0)
+            remote = ostree_remote_factory(url=ostree_fixture_url, policy=policy, depth=0)
         result = ostree_repositories_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href})
         monitor_task_result = monitor_task(result.task)
         repo = ostree_repositories_api_client.read(repo.pulp_href)
@@ -161,3 +163,8 @@ def sync_repo_version(
         return ostree_repositories_versions_api_client.read(repo_version_href), remote, repo
 
     return _sync_repo_version
+
+
+@pytest.fixture(scope="class")
+def ostree_fixture_url(fixtures_cfg):
+    return urljoin(fixtures_cfg.remote_fixtures_origin, "ostree/small/")
